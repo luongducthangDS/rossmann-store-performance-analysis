@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retail Store &amp; Pricing Performance — Rossmann</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+<style>
+:root{
+  --bg-primary:#f8f9fa; --bg-card:#ffffff; --bg-header:#1a1a2e;
+  --text-primary:#212529; --text-secondary:#6c757d; --text-on-dark:#ffffff;
+  --c1:#2E86AB; --c2:#A23B72; --c3:#F18F01; --c4:#C73E1D;
+  --gap:16px; --radius:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg-primary);color:var(--text-primary);line-height:1.5;}
+.container{max-width:1400px;margin:0 auto;padding:var(--gap);}
+header{background:var(--bg-header);color:var(--text-on-dark);padding:24px 28px;border-radius:var(--radius);margin-bottom:var(--gap);}
+header h1{font-size:22px;font-weight:600;}
+header p{font-size:13px;color:rgba(255,255,255,.65);margin-top:6px;}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--gap);margin-bottom:var(--gap);}
+.kpi-card{background:var(--bg-card);border-radius:var(--radius);padding:20px 24px;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.kpi-label{font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.kpi-value{font-size:26px;font-weight:700;}
+.kpi-note{font-size:12px;color:var(--text-secondary);margin-top:4px;}
+.insight-banner{background:#fff3cd;border-left:4px solid var(--c3);border-radius:6px;padding:14px 18px;margin-bottom:var(--gap);font-size:14px;}
+.insight-banner b{color:#7a5200;}
+.chart-row{display:grid;grid-template-columns:1fr;gap:var(--gap);margin-bottom:var(--gap);}
+.chart-row.two{grid-template-columns:1fr 1fr;}
+.chart-row.three{grid-template-columns:1fr 1fr 1fr;}
+.card{background:var(--bg-card);border-radius:var(--radius);padding:20px 24px;box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.card h3{font-size:14px;font-weight:600;margin-bottom:4px;}
+.card .sub{font-size:12px;color:var(--text-secondary);margin-bottom:14px;}
+.card canvas{max-height:280px;}
+.table-section{background:var(--bg-card);border-radius:var(--radius);padding:20px 24px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow-x:auto;}
+table.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table thead th{text-align:left;padding:10px 12px;border-bottom:2px solid #dee2e6;color:var(--text-secondary);font-weight:600;font-size:12px;text-transform:uppercase;cursor:pointer;}
+.data-table thead th:hover{background:#f8f9fa;}
+.data-table tbody td{padding:10px 12px;border-bottom:1px solid #f0f0f0;}
+.data-table tbody tr:hover{background:#f8f9fa;}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#ffe3e0;color:#a83232;}
+footer{text-align:center;font-size:12px;color:var(--text-secondary);padding:20px 0;}
+@media (max-width:900px){.chart-row.two,.chart-row.three{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Retail Store &amp; Pricing Performance</h1>
+    <p>Rossmann drugstores — 844,392 open-day records · 1,115 stores · Jan 2013 – Jul 2015</p>
+  </header>
+
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="kpi-label">Stores analyzed</div><div class="kpi-value" id="kpi-stores"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Promo sales uplift</div><div class="kpi-value" id="kpi-promo"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Promo: footfall vs basket</div><div class="kpi-value" id="kpi-split" style="font-size:16px;"></div></div>
+    <div class="kpi-card"><div class="kpi-label">Underperforming stores flagged</div><div class="kpi-value" id="kpi-under"></div><div class="kpi-note">good footfall, bottom-25% sales in their format</div></div>
+  </div>
+
+  <div class="insight-banner">
+    <b>So what:</b> Promos pull in more shoppers (+21%) far more than they grow basket size (+14%) — and the uplift is strongest Monday, weakest Friday. Meanwhile 11 stores have the traffic but not the sales: that's a pricing/conversion fix, not a marketing spend fix.
+  </div>
+
+  <div class="chart-row two">
+    <div class="card">
+      <h3>Promo sales uplift by day of week</h3>
+      <div class="sub">Rossmann only runs promos Mon-Fri. Uplift decays from +57% (Mon) to +22% (Fri).</div>
+      <canvas id="dowChart"></canvas>
+    </div>
+    <div class="card">
+      <h3>Store format: traffic vs basket value</h3>
+      <div class="sub">Type B: 2.5-3x the customers, but the lowest basket value — a different format, not a scaled-down A.</div>
+      <canvas id="typeChart"></canvas>
+    </div>
+  </div>
+
+  <div class="chart-row two">
+    <div class="card">
+      <h3>Avg daily sales by nearest-competitor distance</h3>
+      <div class="sub">"Very close to a competitor" stores sell the most, not the least — a retail-cluster effect, not proof competition is harmless (correlational).</div>
+      <canvas id="compChart"></canvas>
+    </div>
+    <div class="card">
+      <h3>Assortment type performance</h3>
+      <div class="sub">Assortment "b" is a rare, high-value format (only 9 stores).</div>
+      <canvas id="assortChart"></canvas>
+    </div>
+  </div>
+
+  <div class="table-section">
+    <h3 style="margin-bottom:12px;">Underperforming stores — good footfall, low relative sales <span class="badge">action list</span></h3>
+    <table class="data-table" id="underTable"></table>
+  </div>
+
+  <footer>Rossmann Store Sales (Kaggle) · Reproducible via analysis.py</footer>
+</div>
+
+<script>
+const RAW = {"stats": {"rows_open_days": 844392, "stores": 1115, "date_range": ["2013-01-01", "2015-07-31"], "promo_uplift_sales_pct": 0.3877, "promo_uplift_customers_pct": 0.2118, "promo_uplift_basket_value_pct": 0.1384, "corr_sales_vs_competition_distance": -0.0424, "underperforming_stores_flagged": 11}, "promo_dow": [{"DayOfWeek": 1, "no_promo": 6222.521494769302, "promo": 9772.784368810118, "uplift_pct": 0.5705505199178811, "DayName": "Mon"}, {"DayOfWeek": 2, "no_promo": 5716.241087324028, "promo": 8277.201522342384, "uplift_pct": 0.4480147698279171, "DayName": "Tue"}, {"DayOfWeek": 3, "no_promo": 5617.044778391875, "promo": 7685.077815807073, "uplift_pct": 0.3681710078884688, "DayName": "Wed"}, {"DayOfWeek": 4, "no_promo": 5749.837411807472, "promo": 7598.070760762516, "uplift_pct": 0.3214409759064907, "DayName": "Thu"}, {"DayOfWeek": 5, "no_promo": 6344.030127096337, "promo": 7744.066218557273, "uplift_pct": 0.2206855994395682, "DayName": "Fri"}, {"DayOfWeek": 6, "no_promo": 5874.840237959711, "promo": NaN, "uplift_pct": NaN, "DayName": "Sat"}, {"DayOfWeek": 7, "no_promo": 8224.723907598107, "promo": NaN, "uplift_pct": NaN, "DayName": "Sun"}], "store_type": [{"StoreType": "a", "avg_daily_sales": 6925.17, "avg_customers": 795.36, "avg_basket_value": 8.85, "n_stores": 602}, {"StoreType": "b", "avg_daily_sales": 10231.41, "avg_customers": 2021.82, "avg_basket_value": 5.13, "n_stores": 17}, {"StoreType": "c", "avg_daily_sales": 6932.51, "avg_customers": 815.47, "avg_basket_value": 8.63, "n_stores": 148}, {"StoreType": "d", "avg_daily_sales": 6822.14, "avg_customers": 606.34, "avg_basket_value": 11.28, "n_stores": 348}], "assortment": [{"Assortment": "a", "avg_daily_sales": 6621.02, "avg_basket_value": 9.13, "n_stores": 593}, {"Assortment": "b", "avg_daily_sales": 8639.35, "avg_basket_value": 4.16, "n_stores": 9}, {"Assortment": "c", "avg_daily_sales": 7300.53, "avg_basket_value": 10.02, "n_stores": 513}], "comp_dist": [{"comp_distance_bucket": "Very close", "avg_sales": 7331.5, "avg_basket_value": 8.25, "n_stores": 278}, {"comp_distance_bucket": "Close", "avg_sales": 6881.74, "avg_basket_value": 9.3, "n_stores": 278}, {"comp_distance_bucket": "Far", "avg_sales": 6698.75, "avg_basket_value": 9.99, "n_stores": 278}, {"comp_distance_bucket": "Very far", "avg_sales": 6841.75, "avg_basket_value": 10.65, "n_stores": 278}], "underperformers": [{"Store": 664, "StoreType": "d", "avg_sales": 4946.36, "avg_customers": 602.41, "avg_basket_value": 8.07, "sales_rank_pct_within_type": 0.11, "customer_rank_pct": 0.55}, {"Store": 440, "StoreType": "d", "avg_sales": 5156.08, "avg_customers": 588.96, "avg_basket_value": 8.67, "sales_rank_pct_within_type": 0.16, "customer_rank_pct": 0.51}, {"Store": 530, "StoreType": "a", "avg_sales": 4634.32, "avg_customers": 750.81, "avg_basket_value": 6.39, "sales_rank_pct_within_type": 0.16, "customer_rank_pct": 0.55}, {"Store": 988, "StoreType": "a", "avg_sales": 4698.07, "avg_customers": 722.51, "avg_basket_value": 6.49, "sales_rank_pct_within_type": 0.17, "customer_rank_pct": 0.52}, {"Store": 828, "StoreType": "d", "avg_sales": 5199.95, "avg_customers": 587.07, "avg_basket_value": 8.73, "sales_rank_pct_within_type": 0.17, "customer_rank_pct": 0.51}, {"Store": 127, "StoreType": "d", "avg_sales": 5238.15, "avg_customers": 659.75, "avg_basket_value": 7.82, "sales_rank_pct_within_type": 0.18, "customer_rank_pct": 0.66}, {"Store": 680, "StoreType": "c", "avg_sales": 5205.31, "avg_customers": 791.02, "avg_basket_value": 6.53, "sales_rank_pct_within_type": 0.2, "customer_rank_pct": 0.55}, {"Store": 631, "StoreType": "d", "avg_sales": 5400.31, "avg_customers": 638.44, "avg_basket_value": 8.38, "sales_rank_pct_within_type": 0.22, "customer_rank_pct": 0.61}, {"Store": 436, "StoreType": "d", "avg_sales": 5509.48, "avg_customers": 616.74, "avg_basket_value": 8.83, "sales_rank_pct_within_type": 0.23, "customer_rank_pct": 0.57}, {"Store": 419, "StoreType": "c", "avg_sales": 5311.16, "avg_customers": 852.06, "avg_basket_value": 6.17, "sales_rank_pct_within_type": 0.24, "customer_rank_pct": 0.62}, {"Store": 597, "StoreType": "a", "avg_sales": 5080.22, "avg_customers": 727.53, "avg_basket_value": 6.94, "sales_rank_pct_within_type": 0.25, "customer_rank_pct": 0.52}]};
+
+function fmtMoney(v){
+  if(Math.abs(v)>=1e3) return '$'+(v/1e3).toFixed(1)+'K';
+  return '$'+(+v).toFixed(2);
+}
+function fmtPct(v){ return (v*100>=0?'+':'')+(v*100).toFixed(1)+'%'; }
+
+document.getElementById('kpi-stores').textContent = RAW.stats.stores.toLocaleString();
+document.getElementById('kpi-promo').textContent = fmtPct(RAW.stats.promo_uplift_sales_pct);
+document.getElementById('kpi-split').textContent = fmtPct(RAW.stats.promo_uplift_customers_pct)+' cust / '+fmtPct(RAW.stats.promo_uplift_basket_value_pct)+' basket';
+document.getElementById('kpi-under').textContent = RAW.stats.underperforming_stores_flagged;
+
+// promo by day of week (Mon-Fri only have promo data)
+const dowData = RAW.promo_dow.filter(d => Number.isFinite(d.uplift_pct));
+new Chart(document.getElementById('dowChart'), {
+  type:'bar',
+  data:{
+    labels: dowData.map(d=>d.DayName),
+    datasets:[{label:'Sales uplift', data: dowData.map(d=>+(d.uplift_pct*100).toFixed(1)), backgroundColor:'#2E86AB'}]
+  },
+  options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>'+'+c.parsed.y+'%'}}}, scales:{y:{ticks:{callback:v=>v+'%'}}}}
+});
+
+// store type: dual metric
+new Chart(document.getElementById('typeChart'), {
+  type:'bar',
+  data:{
+    labels: RAW.store_type.map(s=>'Type '+s.StoreType),
+    datasets:[
+      {label:'Avg customers/day', data: RAW.store_type.map(s=>s.avg_customers), backgroundColor:'#2E86AB', yAxisID:'y'},
+      {label:'Avg basket value ($)', data: RAW.store_type.map(s=>s.avg_basket_value), backgroundColor:'#F18F01', yAxisID:'y1'}
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{position:'top'}},
+    scales:{
+      y:{position:'left', title:{display:true,text:'Customers/day'}},
+      y1:{position:'right', title:{display:true,text:'Basket value ($)'}, grid:{drawOnChartArea:false}}
+    }
+  }
+});
+
+// competition distance
+new Chart(document.getElementById('compChart'), {
+  type:'bar',
+  data:{
+    labels: RAW.comp_dist.map(d=>d.comp_distance_bucket),
+    datasets:[{label:'Avg daily sales', data: RAW.comp_dist.map(d=>d.avg_sales), backgroundColor:'#A23B72'}]
+  },
+  options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmtMoney(c.parsed.y)}}}, scales:{y:{ticks:{callback:v=>fmtMoney(v)}}}}
+});
+
+// assortment
+new Chart(document.getElementById('assortChart'), {
+  type:'bar',
+  data:{
+    labels: RAW.assortment.map(a=>'Assortment '+a.Assortment),
+    datasets:[{label:'Avg daily sales', data: RAW.assortment.map(a=>a.avg_daily_sales), backgroundColor:['#2E86AB','#F18F01','#C73E1D']}]
+  },
+  options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmtMoney(c.parsed.y)}}}, scales:{y:{ticks:{callback:v=>fmtMoney(v)}}}}
+});
+
+// underperformers table
+(function(){
+  const cols=[
+    {f:'Store',l:'Store'},{f:'StoreType',l:'Type'},
+    {f:'avg_sales',l:'Avg Sales/day',fmt:fmtMoney},
+    {f:'avg_customers',l:'Avg Customers/day',fmt:v=>Math.round(v).toLocaleString()},
+    {f:'avg_basket_value',l:'Basket Value',fmt:fmtMoney},
+    {f:'sales_rank_pct_within_type',l:'Sales Percentile (within type)',fmt:v=>(v*100).toFixed(0)+'%'},
+    {f:'customer_rank_pct',l:'Footfall Percentile (within type)',fmt:v=>(v*100).toFixed(0)+'%'},
+  ];
+  let sortCol='sales_rank_pct_within_type', sortDir='asc';
+  const container = document.getElementById('underTable');
+  function render(){
+    const sorted=[...RAW.underperformers].sort((a,b)=>{
+      const cmp=a[sortCol]<b[sortCol]?-1:a[sortCol]>b[sortCol]?1:0;
+      return sortDir==='asc'?cmp:-cmp;
+    });
+    let h='<thead><tr>'+cols.map(c=>{
+      const arrow = sortCol===c.f?(sortDir==='asc'?' ▲':' ▼'):'';
+      return `<th data-f="${c.f}">${c.l}${arrow}</th>`;
+    }).join('')+'</tr></thead><tbody>';
+    sorted.forEach(row=>{ h+='<tr>'+cols.map(c=>`<td>${c.fmt?c.fmt(row[c.f]):row[c.f]}</td>`).join('')+'</tr>'; });
+    h+='</tbody>';
+    container.innerHTML=h;
+    container.querySelectorAll('th').forEach(th=>{
+      th.addEventListener('click',()=>{
+        const f=th.dataset.f;
+        if(sortCol===f){sortDir=sortDir==='asc'?'desc':'asc';} else {sortCol=f;sortDir='asc';}
+        render();
+      });
+    });
+  }
+  render();
+})();
+</script>
+</body>
+</html>

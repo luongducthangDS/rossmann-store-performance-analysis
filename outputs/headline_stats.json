@@ -1,0 +1,13 @@
+{
+  "rows_open_days": 844392,
+  "stores": 1115,
+  "date_range": [
+    "2013-01-01",
+    "2015-07-31"
+  ],
+  "promo_uplift_sales_pct": 0.3877,
+  "promo_uplift_customers_pct": 0.2118,
+  "promo_uplift_basket_value_pct": 0.1384,
+  "corr_sales_vs_competition_distance": -0.0424,
+  "underperforming_stores_flagged": 11
+}
